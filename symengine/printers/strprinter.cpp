@@ -372,6 +372,16 @@ void StrPrinter::bvisit(const Piecewise &x)
     str_ = s.str();
 }
 
+void StrPrinter::bvisit(const Reals &x)
+{
+    str_ = "Reals";
+}
+
+void StrPrinter::bvisit(const Integers &x)
+{
+    str_ = "Integers";
+}
+
 void StrPrinter::bvisit(const EmptySet &x)
 {
     str_ = "EmptySet";

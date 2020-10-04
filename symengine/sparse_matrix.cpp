@@ -1,6 +1,7 @@
 #include <numeric>
 #include <symengine/matrix.h>
 #include <symengine/add.h>
+#include <symengine/functions.h>
 #include <symengine/mul.h>
 #include <symengine/constants.h>
 #include <symengine/symengine_exception.h>
@@ -184,6 +185,16 @@ void CSRMatrix::mul_matrix(const MatrixBase &other, MatrixBase &result) const
     throw NotImplementedError("Not Implemented");
 }
 
+void CSRMatrix::elementwise_mul_matrix(const MatrixBase &other,
+                                       MatrixBase &result) const
+{
+    if (is_a<CSRMatrix>(result)) {
+        auto &o = down_cast<const CSRMatrix &>(other);
+        auto &r = down_cast<CSRMatrix &>(result);
+        csr_binop_csr_canonical(*this, o, r, mul);
+    }
+}
+
 // Add a scalar
 void CSRMatrix::add_scalar(const RCP<const Basic> &k, MatrixBase &result) const
 {
@@ -194,6 +205,22 @@ void CSRMatrix::add_scalar(const RCP<const Basic> &k, MatrixBase &result) const
 void CSRMatrix::mul_scalar(const RCP<const Basic> &k, MatrixBase &result) const
 {
     throw NotImplementedError("Not Implemented");
+}
+
+// Matrix conjugate
+void CSRMatrix::conjugate(MatrixBase &result) const
+{
+    if (is_a<CSRMatrix>(result)) {
+        auto &r = down_cast<CSRMatrix &>(result);
+        std::vector<unsigned> p(p_), j(j_);
+        vec_basic x(x_.size());
+        for (unsigned i = 0; i < x_.size(); ++i) {
+            x[i] = SymEngine::conjugate(x_[i]);
+        }
+        r = CSRMatrix(col_, row_, std::move(p), std::move(j), std::move(x));
+    } else {
+        throw NotImplementedError("Not Implemented");
+    }
 }
 
 // Matrix transpose
@@ -207,7 +234,7 @@ void CSRMatrix::transpose(MatrixBase &result) const
     }
 }
 
-CSRMatrix CSRMatrix::transpose() const
+CSRMatrix CSRMatrix::transpose(bool conjugate) const
 {
     const auto nnz = j_.size();
     std::vector<unsigned> p(col_ + 1, 0), j(nnz), tmp(col_, 0);
@@ -222,11 +249,26 @@ CSRMatrix CSRMatrix::transpose() const
             const auto ci = j_[i];
             const unsigned k = p[ci] + tmp[ci];
             j[k] = ri;
-            x[k] = x_[i];
+            if (conjugate) {
+                x[k] = SymEngine::conjugate(x_[i]);
+            } else {
+                x[k] = x_[i];
+            }
             tmp[ci]++;
         }
     }
     return CSRMatrix(col_, row_, std::move(p), std::move(j), std::move(x));
+}
+
+// Matrix conjugate transpose
+void CSRMatrix::conjugate_transpose(MatrixBase &result) const
+{
+    if (is_a<CSRMatrix>(result)) {
+        auto &r = down_cast<CSRMatrix &>(result);
+        r = this->transpose(true);
+    } else {
+        throw NotImplementedError("Not Implemented");
+    }
 }
 
 // Extract out a submatrix

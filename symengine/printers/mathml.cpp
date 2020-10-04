@@ -108,6 +108,16 @@ void MathMLPrinter::bvisit(const EmptySet &x)
     s << "<emptyset/>";
 }
 
+void MathMLPrinter::bvisit(const Reals &x)
+{
+    s << "<reals/>";
+}
+
+void MathMLPrinter::bvisit(const Integers &x)
+{
+    s << "<integers/>";
+}
+
 void MathMLPrinter::bvisit(const FiniteSet &x)
 {
     s << "<set>";
